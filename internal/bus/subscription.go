@@ -18,16 +18,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Subscription 订阅消息
 type Subscription[MessageType proto.Message] interface {
 	Channel() <-chan MessageType
 	Close() error
 }
 
+// subscription 订阅消息
 type subscription[MessageType proto.Message] struct {
 	Reader
 	c <-chan MessageType
 }
 
+// newSubscription 创建一个订阅消息
 func newSubscription[MessageType proto.Message](sub Reader, size int) Subscription[MessageType] {
 	msgChan := make(chan MessageType, size)
 	go func() {
@@ -52,6 +55,7 @@ func newSubscription[MessageType proto.Message](sub Reader, size int) Subscripti
 	}
 }
 
+// Channel 返回订阅的消息通道
 func (s *subscription[MessageType]) Channel() <-chan MessageType {
 	return s.c
 }

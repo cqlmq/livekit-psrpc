@@ -22,13 +22,18 @@ import (
 	"github.com/livekit/psrpc/internal/bus"
 )
 
+// Subscription 订阅消息接口
+// 相当于bus.Subscription[MessageType]的别名
 type Subscription[MessageType proto.Message] bus.Subscription[MessageType]
 
+// Response 响应消息
+// 用于存储请求结果和错误信息
 type Response[ResponseType proto.Message] struct {
 	Result ResponseType
 	Err    error
 }
 
+// Stream 流消息接口
 type Stream[SendType, RecvType proto.Message] interface {
 	Context() context.Context
 	Channel() <-chan RecvType
@@ -37,10 +42,12 @@ type Stream[SendType, RecvType proto.Message] interface {
 	Err() error
 }
 
+// ClientStream 客户端流消息接口
 type ClientStream[SendType, RecvType proto.Message] interface {
 	Stream[SendType, RecvType]
 }
 
+// ServerStream 服务端流消息接口
 type ServerStream[SendType, RecvType proto.Message] interface {
 	Stream[SendType, RecvType]
 	Hijack()

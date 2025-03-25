@@ -21,16 +21,17 @@ import (
 )
 
 const (
-	DefaultChannelSize = 100
+	DefaultChannelSize = 100 // 默认通道大小
 )
 
 // Channel 消息通道
 type Channel struct {
-	Legacy string // bus_local使用于消息总线名称
+	Legacy string // 目前使用此字段做为频道名称
 	Server string // ?
 	Local  string // ?
 }
 
+// MessageBus 消息总线接口定义
 type MessageBus interface {
 	Publish(ctx context.Context, channel Channel, msg proto.Message) error
 	Subscribe(ctx context.Context, channel Channel, channelSize int) (Reader, error)
@@ -42,6 +43,7 @@ type Reader interface {
 	Close() error
 }
 
+// Subscribe 订阅消息(泛型版本)
 func Subscribe[MessageType proto.Message](
 	ctx context.Context,
 	bus MessageBus,
@@ -57,6 +59,7 @@ func Subscribe[MessageType proto.Message](
 	return newSubscription[MessageType](sub, channelSize), nil
 }
 
+// SubscribeQueue 订阅队列消息(泛型版本)
 func SubscribeQueue[MessageType proto.Message](
 	ctx context.Context,
 	bus MessageBus,

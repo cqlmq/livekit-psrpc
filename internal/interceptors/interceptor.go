@@ -23,6 +23,7 @@ import (
 	"github.com/livekit/psrpc/pkg/info"
 )
 
+// ChainClientInterceptors 链式调用客户端拦截器
 func ChainClientInterceptors[HandlerType any, InterceptorType ~func(psrpc.RPCInfo, HandlerType) HandlerType](
 	interceptors []InterceptorType,
 	requestInfo *info.RequestInfo,

@@ -43,6 +43,7 @@ func (r MetricRole) String() string {
 	}
 }
 
+// MetricsObserver 指标观察者
 type MetricsObserver interface {
 	OnUnaryRequest(role MetricRole, rpcInfo psrpc.RPCInfo, duration time.Duration, err error, rxBytes, txBytes int)
 	OnMultiRequest(role MetricRole, rpcInfo psrpc.RPCInfo, duration time.Duration, responseCount, errorCount, rxBytes, txBytes int)

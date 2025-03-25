@@ -18,6 +18,7 @@ import (
 	"github.com/livekit/psrpc"
 )
 
+// getStreamOpts 获取流选项
 func getStreamOpts(options psrpc.StreamOpts, opts ...psrpc.StreamOption) psrpc.StreamOpts {
 	o := &psrpc.StreamOpts{
 		Timeout: options.Timeout,
