@@ -24,6 +24,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// 暂未使用
 type natsMessageBus struct {
 	nc *nats.Conn
 

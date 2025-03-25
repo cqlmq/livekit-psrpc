@@ -24,8 +24,11 @@ const (
 	DefaultChannelSize = 100
 )
 
+// Channel 消息通道
 type Channel struct {
-	Legacy, Server, Local string
+	Legacy string // bus_local使用于消息总线名称
+	Server string // ?
+	Local  string // ?
 }
 
 type MessageBus interface {

@@ -21,12 +21,19 @@ import (
 	"github.com/livekit/psrpc/internal"
 )
 
+// serialize 序列化一个消息到字节数组。
 func serialize(msg proto.Message, channel string) ([]byte, error) {
+	// 序列化消息到字节数组。
 	value, err := proto.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
 
+	// 创建一个 Msg 消息，包含消息类型、值和通道。
+	// TypeUrl 在反序列化时可以确保恢复到正确的消息类型
+	// 使用 google.protobuf.Any 来序列化消息，可以确保消息类型在反序列化时可以恢复到正确的消息类型
+	// Value 是序列化后的消息字节数组
+	// Channel 是消息通道(提供额外信息)
 	return proto.Marshal(&internal.Msg{
 		TypeUrl: "type.googleapis.com/" + string(msg.ProtoReflect().Descriptor().FullName()),
 		Value:   value,
