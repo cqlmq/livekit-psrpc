@@ -16,15 +16,18 @@ package server
 
 import "reflect"
 
+// Registerer 定义了注册和注销方法
 type Registerer struct {
 	register   any
 	deregister any
 }
 
+// NewRegisterer 创建一个Registerer
 func NewRegisterer(register, deregister any) Registerer {
 	return Registerer{register, deregister}
 }
 
+// anySliceReflectValues 将any切片转换为reflect.Value切片
 func anySliceReflectValues(anys []any) []reflect.Value {
 	vals := make([]reflect.Value, len(anys))
 	for i, a := range anys {
@@ -33,8 +36,10 @@ func anySliceReflectValues(anys []any) []reflect.Value {
 	return vals
 }
 
+// RegistererSlice 是一个Registerer切片
 type RegistererSlice []Registerer
 
+// Register 注册
 func (rs RegistererSlice) Register(params ...any) error {
 	paramVals := anySliceReflectValues(params)
 	for i, r := range rs {
@@ -47,6 +52,7 @@ func (rs RegistererSlice) Register(params ...any) error {
 	return nil
 }
 
+// Deregister 注销
 func (rs RegistererSlice) Deregister(params ...any) {
 	paramVals := anySliceReflectValues(params)
 	for _, r := range rs {

@@ -20,26 +20,30 @@ import (
 	"github.com/livekit/psrpc"
 )
 
+// ServiceDefinition 服务定义结构体
 type ServiceDefinition struct {
-	Name    string
-	ID      string
-	Methods sync.Map
+	Name    string   // 服务名称
+	ID      string   // 服务ID
+	Methods sync.Map // 方法集合
 }
 
+// MethodInfo 方法信息结构体
 type MethodInfo struct {
-	AffinityEnabled bool
-	Multi           bool
-	RequireClaim    bool
-	Queue           bool
+	AffinityEnabled bool // 是否启用亲和力
+	Multi           bool // 是否多路复用
+	RequireClaim    bool // 是否需要声明
+	Queue           bool // 是否需要队列
 }
 
+// RequestInfo 请求信息结构体
 type RequestInfo struct {
-	psrpc.RPCInfo
-	AffinityEnabled bool
-	RequireClaim    bool
-	Queue           bool
+	psrpc.RPCInfo        // 继承psrpc.RPCInfo
+	AffinityEnabled bool // 是否启用亲和力
+	RequireClaim    bool // 是否需要声明
+	Queue           bool // 是否需要队列
 }
 
+// RegisterMethod 注册方法
 func (s *ServiceDefinition) RegisterMethod(name string, affinityEnabled, multi, requireClaim, queue bool) {
 	s.Methods.Store(name, &MethodInfo{
 		AffinityEnabled: affinityEnabled,
@@ -49,6 +53,9 @@ func (s *ServiceDefinition) RegisterMethod(name string, affinityEnabled, multi, 
 	})
 }
 
+// GetInfo 获取方法信息（请求信息）
+// rpc: 方法名称，也就是某个服务的类别字符串，如livekit.RoomService.CreateRoom ？
+// topic: 主题
 func (s *ServiceDefinition) GetInfo(rpc string, topic []string) *RequestInfo {
 	v, _ := s.Methods.Load(rpc)
 	m := v.(*MethodInfo)

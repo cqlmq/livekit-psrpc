@@ -32,30 +32,33 @@ import (
 	"github.com/livekit/psrpc/pkg/metadata"
 )
 
+// AffinityFunc 亲和力函数
 type AffinityFunc[RequestType proto.Message] func(context.Context, RequestType) float32
 
+// rpcHandlerImpl 是一个结构体，定义了RPC处理程序
 type rpcHandlerImpl[RequestType proto.Message, ResponseType proto.Message] struct {
-	i *info.RequestInfo
+	i *info.RequestInfo // 请求信息
 
-	handler      func(context.Context, RequestType) (ResponseType, error)
-	affinityFunc AffinityFunc[RequestType]
+	handler      func(context.Context, RequestType) (ResponseType, error) // 处理程序
+	affinityFunc AffinityFunc[RequestType]                                // 亲和力函数
 
 	mu          sync.RWMutex
-	requestSub  bus.Subscription[*internal.Request]
-	claimSub    bus.Subscription[*internal.ClaimResponse]
-	claims      map[string]chan *internal.ClaimResponse
-	handling    sync.WaitGroup
-	closeOnce   sync.Once
-	complete    chan struct{}
-	onCompleted func()
+	requestSub  bus.Subscription[*internal.Request]       // 请求订阅
+	claimSub    bus.Subscription[*internal.ClaimResponse] // 声明订阅
+	claims      map[string]chan *internal.ClaimResponse   // 声明通道
+	handling    sync.WaitGroup                            // 处理程序等待组
+	closeOnce   sync.Once                                 // 关闭一次
+	complete    chan struct{}                             // 完成通道
+	onCompleted func()                                    // 完成回调
 }
 
+// newRPCHandler 创建一个RPC处理程序
 func newRPCHandler[RequestType proto.Message, ResponseType proto.Message](
-	s *RPCServer,
-	i *info.RequestInfo,
-	svcImpl func(context.Context, RequestType) (ResponseType, error),
-	interceptor psrpc.ServerRPCInterceptor,
-	affinityFunc AffinityFunc[RequestType],
+	s *RPCServer, // 服务器
+	i *info.RequestInfo, // 请求信息
+	svcImpl func(context.Context, RequestType) (ResponseType, error), // 服务实现
+	interceptor psrpc.ServerRPCInterceptor, // 拦截器
+	affinityFunc AffinityFunc[RequestType], // 亲和力函数
 ) (*rpcHandlerImpl[RequestType, ResponseType], error) {
 
 	ctx := context.Background()
@@ -116,6 +119,7 @@ func newRPCHandler[RequestType proto.Message, ResponseType proto.Message](
 	return h, nil
 }
 
+// run 运行RPC处理程序
 func (h *rpcHandlerImpl[RequestType, ResponseType]) run(s *RPCServer) {
 	go func() {
 		requests := h.requestSub.Channel()
@@ -153,6 +157,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) run(s *RPCServer) {
 	}()
 }
 
+// handleRequest 处理请求
 func (h *rpcHandlerImpl[RequestType, ResponseType]) handleRequest(
 	s *RPCServer,
 	ir *internal.Request,
@@ -191,6 +196,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) handleRequest(
 	return h.sendResponse(s, ctx, ir, response, err)
 }
 
+// claimRequest 声明请求
 func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 	s *RPCServer,
 	ctx context.Context,
@@ -245,6 +251,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 	}
 }
 
+// sendResponse 发送响应
 func (h *rpcHandlerImpl[RequestType, ResponseType]) sendResponse(
 	s *RPCServer,
 	ctx context.Context,
@@ -286,6 +293,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) sendResponse(
 	return s.bus.Publish(ctx, info.GetResponseChannel(s.Name, ir.ClientId), res)
 }
 
+// close 关闭RPC处理程序
 func (h *rpcHandlerImpl[RequestType, ResponseType]) close(force bool) {
 	h.closeOnce.Do(func() {
 		_ = h.requestSub.Close()

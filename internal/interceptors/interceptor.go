@@ -35,6 +35,8 @@ func ChainClientInterceptors[HandlerType any, InterceptorType ~func(psrpc.RPCInf
 	return handler
 }
 
+// ChainServerInterceptors 链式调用服务器拦截器
+// 目的：把多个服务器拦截器串联起来，形成一个拦截器（）
 func ChainServerInterceptors(interceptors []psrpc.ServerRPCInterceptor) psrpc.ServerRPCInterceptor {
 	switch n := len(interceptors); n {
 	case 0:
@@ -50,6 +52,11 @@ func ChainServerInterceptors(interceptors []psrpc.ServerRPCInterceptor) psrpc.Se
 				i    int
 				next psrpc.ServerRPCHandler
 			}
+			// 这里是一个闭包，state.next 是一个函数，它会在每次调用时递增i，并调用下一个拦截器
+			// 当i等于len(interceptors)-1时，调用最后一个拦截器，并返回结果
+			// 否则，继续递增i，并调用下一个拦截器
+			// 最后，调用最后一个拦截器，并返回结果
+			// 递归调用
 			state.next = func(ctx context.Context, req proto.Message) (proto.Message, error) {
 				if state.i == len(interceptors)-1 {
 					return interceptors[state.i](ctx, req, rpcInfo, handler)

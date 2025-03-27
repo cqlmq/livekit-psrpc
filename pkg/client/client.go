@@ -26,19 +26,19 @@ import (
 	"github.com/livekit/psrpc/pkg/info"
 )
 
+// RPCClient 是一个RPC客户端
 type RPCClient struct {
-	*info.ServiceDefinition
-	psrpc.ClientOpts
-
-	bus bus.MessageBus
-
-	mu               sync.RWMutex
-	claimRequests    map[string]chan *internal.ClaimRequest
-	responseChannels map[string]chan *internal.Response
-	streamChannels   map[string]chan *internal.Stream
-	closed           core.Fuse
+	*info.ServiceDefinition                                        // 服务定义
+	psrpc.ClientOpts                                               // 客户端选项
+	bus                     bus.MessageBus                         // 消息总线
+	mu                      sync.RWMutex                           // 读写锁
+	claimRequests           map[string]chan *internal.ClaimRequest // 声明请求
+	responseChannels        map[string]chan *internal.Response     // 响应通道
+	streamChannels          map[string]chan *internal.Stream       // 流通道
+	closed                  core.Fuse                              // 关闭熔断器
 }
 
+// NewRPCClientWithStreams 创建一个带有流的RPC客户端
 func NewRPCClientWithStreams(
 	sd *info.ServiceDefinition,
 	b bus.MessageBus,
@@ -47,6 +47,7 @@ func NewRPCClientWithStreams(
 	return NewRPCClient(sd, b, append(opts, withStreams())...)
 }
 
+// NewRPCClient 创建一个RPC客户端
 func NewRPCClient(
 	sd *info.ServiceDefinition,
 	b bus.MessageBus,
@@ -146,6 +147,7 @@ func NewRPCClient(
 	return c, nil
 }
 
+// Close 关闭RPC客户端
 func (c *RPCClient) Close() {
 	c.closed.Break()
 }

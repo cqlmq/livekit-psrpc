@@ -14,9 +14,10 @@
 
 package psrpc
 
+// RPCInfo 是一个结构体，定义了RPC信息
 type RPCInfo struct {
-	Service string
-	Method  string
-	Topic   []string
-	Multi   bool
+	Service string   // 服务名称
+	Method  string   // 方法名称
+	Topic   []string // 主题
+	Multi   bool     // 是否多路复用
 }

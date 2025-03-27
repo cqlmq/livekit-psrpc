@@ -28,22 +28,24 @@ import (
 	"github.com/livekit/psrpc/pkg/info"
 )
 
+// rpcHandler 是一个接口，定义了close方法
 type rpcHandler interface {
 	close(force bool)
 }
 
+// RPCServer 是一个服务器结构体
 type RPCServer struct {
-	*info.ServiceDefinition
-	psrpc.ServerOpts
-
-	bus bus.MessageBus
-
-	mu       sync.RWMutex
-	handlers map[string]rpcHandler
-	active   sync.WaitGroup
-	shutdown core.Fuse
+	*info.ServiceDefinition                       // 服务定义(名称、ID、方法集合)
+	psrpc.ServerOpts                              // 服务器选项(超时时间、通道大小...)
+	bus                     bus.MessageBus        // 消息总线
+	mu                      sync.RWMutex          // 读写锁
+	handlers                map[string]rpcHandler // 处理程序
+	active                  sync.WaitGroup        // 活动
+	shutdown                core.Fuse             // 熔断器
 }
 
+// NewRPCServer 创建一个RPC服务器
+// todo 这个方法在livekit-server中没有直接调用，以后查看调用的位置, 可能通过psrpc?
 func NewRPCServer(sd *info.ServiceDefinition, b bus.MessageBus, opts ...psrpc.ServerOption) *RPCServer {
 	s := &RPCServer{
 		ServiceDefinition: sd,
@@ -51,6 +53,7 @@ func NewRPCServer(sd *info.ServiceDefinition, b bus.MessageBus, opts ...psrpc.Se
 		bus:               b,
 		handlers:          make(map[string]rpcHandler),
 	}
+	// opts中的ServerID优先级更高
 	if s.ServerID != "" {
 		s.ID = s.ServerID
 	}
@@ -58,22 +61,25 @@ func NewRPCServer(sd *info.ServiceDefinition, b bus.MessageBus, opts ...psrpc.Se
 	return s
 }
 
+// RegisterHandler 注册一个处理程序
 func RegisterHandler[RequestType proto.Message, ResponseType proto.Message](
-	s *RPCServer,
-	rpc string,
-	topic []string,
-	svcImpl func(context.Context, RequestType) (ResponseType, error),
-	affinityFunc AffinityFunc[RequestType],
+	s *RPCServer, // 服务器
+	rpc string, // 方法名称，可能的值？？
+	topic []string, // 主题
+	svcImpl func(context.Context, RequestType) (ResponseType, error), // 服务实现
+	affinityFunc AffinityFunc[RequestType], // 亲和力函数
 ) error {
+	// 如果服务器已经关闭，则返回错误
 	if s.shutdown.IsBroken() {
 		return psrpc.ErrServerClosed
 	}
 
+	// 获取方法信息
 	i := s.GetInfo(rpc, topic)
 
-	key := i.GetHandlerKey()
+	key := i.GetHandlerKey() // 获取方法的key
 	s.mu.RLock()
-	_, ok := s.handlers[key]
+	_, ok := s.handlers[key] // 检查是否已经存在处理程序
 	s.mu.RUnlock()
 	if ok {
 		return errors.New("handler already exists")
@@ -101,6 +107,7 @@ func RegisterHandler[RequestType proto.Message, ResponseType proto.Message](
 	return nil
 }
 
+// RegisterStreamHandler 注册一个流处理程序
 func RegisterStreamHandler[RequestType proto.Message, ResponseType proto.Message](
 	s *RPCServer,
 	rpc string,
@@ -144,6 +151,7 @@ func RegisterStreamHandler[RequestType proto.Message, ResponseType proto.Message
 	return nil
 }
 
+// DeregisterHandler 注销一个处理程序
 func (s *RPCServer) DeregisterHandler(rpc string, topic []string) {
 	i := s.GetInfo(rpc, topic)
 	key := i.GetHandlerKey()
@@ -155,11 +163,13 @@ func (s *RPCServer) DeregisterHandler(rpc string, topic []string) {
 	}
 }
 
+// Publish 发布一个消息
 func (s *RPCServer) Publish(ctx context.Context, rpc string, topic []string, msg proto.Message) error {
 	i := s.GetInfo(rpc, topic)
 	return s.bus.Publish(ctx, i.GetRPCChannel(), msg)
 }
 
+// Close 关闭服务器
 func (s *RPCServer) Close(force bool) {
 	s.shutdown.Once(func() {
 		s.mu.RLock()

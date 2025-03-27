@@ -29,6 +29,7 @@ import (
 	"github.com/livekit/psrpc/pkg/rand"
 )
 
+// RequestMulti 请求多路复用
 func RequestMulti[ResponseType proto.Message](
 	ctx context.Context,
 	c *RPCClient,
@@ -74,6 +75,7 @@ func RequestMulti[ResponseType proto.Message](
 	return resChan, nil
 }
 
+// multiRPC 是一个多路复用RPC
 type multiRPC[ResponseType proto.Message] struct {
 	c         *RPCClient
 	i         *info.RequestInfo
@@ -116,6 +118,7 @@ func (m *multiRPC[ResponseType]) Send(ctx context.Context, req proto.Message, op
 	return nil
 }
 
+// handleResponses 处理响应
 func (m *multiRPC[ResponseType]) handleResponses(
 	ctx context.Context,
 	req proto.Message,
@@ -155,6 +158,7 @@ func (m *multiRPC[ResponseType]) handleResponses(
 	}
 }
 
+// Recv 接收
 func (m *multiRPC[ResponseType]) Recv(msg proto.Message, err error) {
 	m.resChan <- &psrpc.Response[ResponseType]{
 		Result: msg.(ResponseType),
@@ -162,6 +166,7 @@ func (m *multiRPC[ResponseType]) Recv(msg proto.Message, err error) {
 	}
 }
 
+// Close 关闭
 func (m *multiRPC[ResponseType]) Close() {
 	m.c.mu.Lock()
 	delete(m.c.responseChannels, m.requestID)

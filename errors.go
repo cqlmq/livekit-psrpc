@@ -39,56 +39,61 @@ var (
 	ErrSlowConsumer    = NewErrorf(Unavailable, "stream message discarded by slow consumer")
 )
 
+// Error 是psrpc的错误接口
 type Error interface {
-	error
-	Code() ErrorCode
-	Details() []any
-	DetailsProto() []*anypb.Any
-
-	// convenience methods
-	ToHttp() int
-	GRPCStatus() *status.Status
+	error                       // 实现error接口
+	Code() ErrorCode            // 返回错误代码
+	Details() []any             // 返回错误详情
+	DetailsProto() []*anypb.Any // 返回错误详情（protobuf格式）
+	// 便利方法
+	ToHttp() int                // 转换为HTTP状态码
+	GRPCStatus() *status.Status // 转换为GRPC状态
 }
 
+// ErrorCode 是错误代码类型
 type ErrorCode string
 
+// Error 实现error类似的功能，返回错误代码的字符串表示
 func (e ErrorCode) Error() string {
 	return string(e)
 }
 
+// ToHTTP 将错误代码转换为HTTP状态码
 func (e ErrorCode) ToHTTP() int {
 	switch e {
 	case OK:
-		return http.StatusOK
+		return http.StatusOK // 成功
 	case Unknown, MalformedResponse, Internal, DataLoss:
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError // 服务器错误
 	case InvalidArgument, MalformedRequest:
-		return http.StatusBadRequest
+		return http.StatusBadRequest // 请求错误
 	case NotFound:
-		return http.StatusNotFound
+		return http.StatusNotFound // 未找到
 	case NotAcceptable:
-		return http.StatusNotAcceptable
+		return http.StatusNotAcceptable // 不接受
 	case AlreadyExists, Aborted:
-		return http.StatusConflict
+		return http.StatusConflict // 冲突
 	case PermissionDenied:
-		return http.StatusForbidden
+		return http.StatusForbidden // 禁止
 	case ResourceExhausted:
-		return http.StatusTooManyRequests
+		return http.StatusTooManyRequests // 太多请求
 	case FailedPrecondition:
-		return http.StatusPreconditionFailed
+		return http.StatusPreconditionFailed // 预条件失败
 	case OutOfRange:
-		return http.StatusRequestedRangeNotSatisfiable
+		return http.StatusRequestedRangeNotSatisfiable // 请求范围不满足
 	case Unimplemented:
-		return http.StatusNotImplemented
+		return http.StatusNotImplemented // 未实现
 	case Canceled, DeadlineExceeded, Unavailable:
-		return http.StatusServiceUnavailable
+		return http.StatusServiceUnavailable // 服务不可用
 	case Unauthenticated:
-		return http.StatusUnauthorized
+		return http.StatusUnauthorized // 未授权
 	default:
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError // 服务器错误
 	}
 }
 
+// ErrorCodeFromGRPC 将GRPC错误代码转换为psrpc错误代码
+// 目前变量名称是一一对应的，方便使用。 grpc中是uint32，psrpc中是ErrorCode(string)
 func ErrorCodeFromGRPC(code codes.Code) ErrorCode {
 	switch code {
 	case codes.OK:
@@ -130,6 +135,7 @@ func ErrorCodeFromGRPC(code codes.Code) ErrorCode {
 	}
 }
 
+// ToGRPC 将psrpc错误代码转换为GRPC错误代码
 func (e ErrorCode) ToGRPC() codes.Code {
 	switch e {
 	case OK:
@@ -171,49 +177,51 @@ func (e ErrorCode) ToGRPC() codes.Code {
 	}
 }
 
+// ToTwirp 将psrpc错误代码转换为Twirp错误代码
 func (e ErrorCode) ToTwirp() twirp.ErrorCode {
 	switch e {
 	case OK:
-		return twirp.NoError
+		return twirp.NoError // 没有错误
 	case Canceled:
-		return twirp.Canceled
+		return twirp.Canceled // 取消
 	case Unknown:
-		return twirp.Unknown
+		return twirp.Unknown // 未知
 	case InvalidArgument:
-		return twirp.InvalidArgument
+		return twirp.InvalidArgument // 无效参数
 	case MalformedRequest, MalformedResponse:
-		return twirp.Malformed
+		return twirp.Malformed // 格式错误
 	case DeadlineExceeded:
-		return twirp.DeadlineExceeded
+		return twirp.DeadlineExceeded // 超时
 	case NotFound:
-		return twirp.NotFound
+		return twirp.NotFound // 未找到
 	case AlreadyExists:
-		return twirp.AlreadyExists
+		return twirp.AlreadyExists // 已存在
 	case PermissionDenied:
-		return twirp.PermissionDenied
+		return twirp.PermissionDenied // 权限拒绝
 	case ResourceExhausted:
-		return twirp.ResourceExhausted
+		return twirp.ResourceExhausted // 资源耗尽
 	case FailedPrecondition:
-		return twirp.FailedPrecondition
+		return twirp.FailedPrecondition // 预条件失败
 	case Aborted:
-		return twirp.Aborted
+		return twirp.Aborted // 中止
 	case OutOfRange:
-		return twirp.OutOfRange
+		return twirp.OutOfRange // 超出范围
 	case Unimplemented:
-		return twirp.Unimplemented
+		return twirp.Unimplemented // 未实现
 	case Internal:
-		return twirp.Internal
+		return twirp.Internal // 内部
 	case Unavailable:
-		return twirp.Unavailable
+		return twirp.Unavailable // 不可用
 	case DataLoss:
-		return twirp.DataLoss
+		return twirp.DataLoss // 数据丢失
 	case Unauthenticated:
-		return twirp.Unauthenticated
+		return twirp.Unauthenticated // 未认证
 	default:
-		return twirp.Unknown
+		return twirp.Unknown // 未知
 	}
 }
 
+// NewError 创建一个psrpc错误
 func NewError(code ErrorCode, err error, details ...proto.Message) Error {
 	if err == nil {
 		panic("error is nil")
@@ -231,6 +239,7 @@ func NewError(code ErrorCode, err error, details ...proto.Message) Error {
 	}
 }
 
+// NewErrorf 创建一个psrpc错误，使用格式化字符串
 func NewErrorf(code ErrorCode, msg string, args ...interface{}) Error {
 	return &psrpcError{
 		error: fmt.Errorf(msg, args...),
@@ -238,6 +247,7 @@ func NewErrorf(code ErrorCode, msg string, args ...interface{}) Error {
 	}
 }
 
+// NewErrorFromResponse 从HTTP响应创建一个psrpc错误
 func NewErrorFromResponse(code, err string, details ...*anypb.Any) Error {
 	if code == "" {
 		code = string(Unknown)
@@ -250,72 +260,79 @@ func NewErrorFromResponse(code, err string, details ...*anypb.Any) Error {
 	}
 }
 
+// 定义错误代码常量
 const (
 	OK ErrorCode = ""
 
-	// Request Canceled by client
+	// Request Canceled by client 客户端请求取消
 	Canceled ErrorCode = "canceled"
-	// Could not unmarshal request
+	// Could not unmarshal request 无法反序列化请求
 	MalformedRequest ErrorCode = "malformed_request"
-	// Could not unmarshal result
+	// Could not unmarshal result 无法反序列化结果
 	MalformedResponse ErrorCode = "malformed_result"
-	// Request timed out
+	// Request timed out 请求超时
 	DeadlineExceeded ErrorCode = "deadline_exceeded"
-	// Service unavailable due to load and/or affinity constraints
+	// Service unavailable due to load and/or affinity constraints 由于负载和/或亲和力约束，服务不可用
 	Unavailable ErrorCode = "unavailable"
-	// Unknown (server returned non-psrpc error)
+	// Unknown (server returned non-psrpc error) 未知（服务器返回非psrpc错误）
 	Unknown ErrorCode = "unknown"
 
-	// Invalid argument in request
+	// Invalid argument in request 请求中的无效参数
 	InvalidArgument ErrorCode = "invalid_argument"
-	// Entity not found
+	// Entity not found 实体未找到
 	NotFound ErrorCode = "not_found"
-	// Cannot produce and entity matching requested format
+	// Cannot produce and entity matching requested format 无法生成与请求格式匹配的实体
 	NotAcceptable ErrorCode = "not_acceptable"
-	// Duplicate creation attempted
+	// Duplicate creation attempted 重复创建尝试
 	AlreadyExists ErrorCode = "already_exists"
-	// Caller does not have required permissions
+	// Caller does not have required permissions 调用者没有必要的权限
 	PermissionDenied ErrorCode = "permission_denied"
-	// Some resource has been exhausted, e.g. memory or quota
+	// Some resource has been exhausted, e.g. memory or quota 某些资源已经耗尽，例如内存或配额
 	ResourceExhausted ErrorCode = "resource_exhausted"
-	// Inconsistent state to carry out request
+	// Inconsistent state to carry out request 无法执行请求
 	FailedPrecondition ErrorCode = "failed_precondition"
-	// Request aborted
+	// Request aborted 请求被中止
 	Aborted ErrorCode = "aborted"
-	// Operation was out of range
+	// Operation was out of range 操作超出范围
 	OutOfRange ErrorCode = "out_of_range"
-	// Operation is not implemented by the server
+	// Operation is not implemented by the server 服务器不支持该操作
 	Unimplemented ErrorCode = "unimplemented"
-	// Operation failed due to an internal error
+	// Operation failed due to an internal error 操作由于内部错误而失败
 	Internal ErrorCode = "internal"
-	// Irrecoverable loss or corruption of data
+	// Irrecoverable loss or corruption of data 不可恢复的数据丢失或损坏
 	DataLoss ErrorCode = "data_loss"
-	// Similar to PermissionDenied, used when the caller is unidentified
+	// Similar to PermissionDenied, used when the caller is unidentified 当调用者未识别时使用，类似于PermissionDenied
 	Unauthenticated ErrorCode = "unauthenticated"
 )
 
+// psrpcError 是psrpc错误类型
 type psrpcError struct {
-	error
-	code    ErrorCode
-	details []*anypb.Any
+	error                // 实现error接口
+	code    ErrorCode    // 错误代码
+	details []*anypb.Any // 错误详情(protobuf格式)
 }
 
+// Code 返回错误代码
 func (e psrpcError) Code() ErrorCode {
 	return e.code
 }
 
+// ToHttp 返回HTTP状态码
 func (e psrpcError) ToHttp() int {
 	return e.code.ToHTTP()
 }
 
+// DetailsProto 返回错误详情(protobuf格式)
 func (e psrpcError) DetailsProto() []*anypb.Any {
 	return e.details
 }
 
+// Details 返回错误详情(protobuf格式)
 func (e psrpcError) Details() []any {
 	return e.GRPCStatus().Details()
 }
 
+// GRPCStatus 返回GRPC状态
 func (e psrpcError) GRPCStatus() *status.Status {
 	return status.FromProto(&spb.Status{
 		Code:    int32(e.code.ToGRPC()),
@@ -324,10 +341,12 @@ func (e psrpcError) GRPCStatus() *status.Status {
 	})
 }
 
+// toTwirp 返回Twirp错误
 func (e psrpcError) toTwirp() twirp.Error {
 	return twirp.NewError(e.code.ToTwirp(), e.Error())
 }
 
+// As 检查错误是否可以转换为指定类型
 func (e psrpcError) As(target any) bool {
 	switch te := target.(type) {
 	case *twirp.Error:
@@ -338,6 +357,7 @@ func (e psrpcError) As(target any) bool {
 	return false
 }
 
+// Unwrap 返回错误链
 func (e psrpcError) Unwrap() []error {
 	return []error{e.error, e.code}
 }

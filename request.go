@@ -20,44 +20,52 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// RequestOption 请求选项函数类型
 type RequestOption func(*RequestOpts)
 
+// RequestOpts 请求选项结构体
 type RequestOpts struct {
 	Timeout       time.Duration
 	SelectionOpts SelectionOpts
 	Interceptors  []any
 }
 
+// SelectionOpts 选择选项结构体
 type SelectionOpts struct {
-	MinimumAffinity      float32                        // minimum affinity for a server to be considered a valid handler
-	MaximumAffinity      float32                        // if > 0, any server returning a max score will be selected immediately
-	AcceptFirstAvailable bool                           // go fast
-	AffinityTimeout      time.Duration                  // server selection deadline
-	ShortCircuitTimeout  time.Duration                  // deadline imposed after receiving first response
-	SelectionFunc        func([]*Claim) (string, error) // custom server selection function
+	MinimumAffinity      float32                        // 最小亲和力，用于判断服务器是否有效
+	MaximumAffinity      float32                        // 最大亲和力，如果大于0，任何返回最大分数的服务器将立即被选择
+	AcceptFirstAvailable bool                           // 快速接受第一个可用的服务器
+	AffinityTimeout      time.Duration                  // 服务器选择截止时间
+	ShortCircuitTimeout  time.Duration                  // 收到第一个响应后的截止时间
+	SelectionFunc        func([]*Claim) (string, error) // 自定义服务器选择函数
 }
 
+// Claim 声明结构体
 type Claim struct {
-	ServerID string
-	Affinity float32
+	ServerID string  // 服务器ID
+	Affinity float32 // 亲和力
 }
 
+// WithRequestTimeout 设置请求超时时间
 func WithRequestTimeout(timeout time.Duration) RequestOption {
 	return func(o *RequestOpts) {
 		o.Timeout = timeout
 	}
 }
 
+// WithSelectionOpts 设置选择选项
 func WithSelectionOpts(opts SelectionOpts) RequestOption {
 	return func(o *RequestOpts) {
 		o.SelectionOpts = opts
 	}
 }
 
+// RequestInterceptor 请求拦截器接口
 type RequestInterceptor interface {
 	ClientRPCInterceptor | ClientMultiRPCInterceptor | StreamInterceptor
 }
 
+// WithRequestInterceptors 设置请求拦截器
 func WithRequestInterceptors[T RequestInterceptor](interceptors ...T) RequestOption {
 	return func(o *RequestOpts) {
 		o.Interceptors = slices.Grow(o.Interceptors, len(interceptors))

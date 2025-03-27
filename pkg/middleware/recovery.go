@@ -24,6 +24,7 @@ import (
 )
 
 // Recover from server panics. Should always be the last interceptor
+// 恢复服务器恐慌。应该总是最后一个拦截器
 func WithServerRecovery() psrpc.ServerRPCInterceptor {
 	return func(ctx context.Context, req proto.Message, _ psrpc.RPCInfo, handler psrpc.ServerRPCHandler) (resp proto.Message, err error) {
 		defer func() {

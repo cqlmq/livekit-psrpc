@@ -22,44 +22,50 @@ import (
 )
 
 const (
-	DefaultClientTimeout        = time.Second * 3
-	DefaultAffinityTimeout      = time.Second
-	DefaultAffinityShortCircuit = time.Millisecond * 200
+	DefaultClientTimeout        = time.Second * 3        // 默认客户端超时时间
+	DefaultAffinityTimeout      = time.Second            // 默认亲和力超时时间
+	DefaultAffinityShortCircuit = time.Millisecond * 200 // 默认亲和力短路时间
 )
 
+// ClientOption 客户端选项函数类型
 type ClientOption func(*ClientOpts)
 
+// ClientOpts 客户端选项结构体
 type ClientOpts struct {
-	ClientID             string
-	Timeout              time.Duration
-	SelectionTimeout     time.Duration
-	ChannelSize          int
-	EnableStreams        bool
-	RequestHooks         []ClientRequestHook
-	ResponseHooks        []ClientResponseHook
-	RpcInterceptors      []ClientRPCInterceptor
-	MultiRPCInterceptors []ClientMultiRPCInterceptor
-	StreamInterceptors   []StreamInterceptor
+	ClientID             string                      // 客户端ID
+	Timeout              time.Duration               // 超时时间
+	SelectionTimeout     time.Duration               // 选择超时时间
+	ChannelSize          int                         // 通道大小
+	EnableStreams        bool                        // 是否启用流
+	RequestHooks         []ClientRequestHook         // 请求钩子函数
+	ResponseHooks        []ClientResponseHook        // 响应钩子函数
+	RpcInterceptors      []ClientRPCInterceptor      // RPC拦截器
+	MultiRPCInterceptors []ClientMultiRPCInterceptor // 多RPC拦截器
+	StreamInterceptors   []StreamInterceptor         // 流拦截器
 }
 
+// WithClientID 设置客户端ID
 func WithClientID(id string) ClientOption {
 	return func(o *ClientOpts) {
 		o.ClientID = id
 	}
 }
 
+// WithClientTimeout 设置客户端超时时间
 func WithClientTimeout(timeout time.Duration) ClientOption {
 	return func(o *ClientOpts) {
 		o.Timeout = timeout
 	}
 }
 
+// WithClientSelectTimeout 设置客户端选择超时时间
 func WithClientSelectTimeout(timeout time.Duration) ClientOption {
 	return func(o *ClientOpts) {
 		o.SelectionTimeout = timeout
 	}
 }
 
+// WithClientChannelSize 设置客户端通道大小
 func WithClientChannelSize(size int) ClientOption {
 	return func(o *ClientOpts) {
 		o.ChannelSize = size
@@ -67,6 +73,7 @@ func WithClientChannelSize(size int) ClientOption {
 }
 
 // Request hooks are called as soon as the request is made
+// 客户端请求钩子函数的类型
 type ClientRequestHook func(ctx context.Context, req proto.Message, info RPCInfo)
 
 func WithClientRequestHooks(hooks ...ClientRequestHook) ClientOption {
@@ -77,6 +84,7 @@ func WithClientRequestHooks(hooks ...ClientRequestHook) ClientOption {
 
 // Response hooks are called just before responses are returned
 // For multi-requests, response hooks are called on every response, and block while executing
+// 客户端响应钩子函数的类型
 type ClientResponseHook func(ctx context.Context, req proto.Message, info RPCInfo, res proto.Message, err error)
 
 func WithClientResponseHooks(hooks ...ClientResponseHook) ClientOption {
@@ -85,7 +93,10 @@ func WithClientResponseHooks(hooks ...ClientResponseHook) ClientOption {
 	}
 }
 
+// ClientRPCInterceptor 客户端RPC拦截器函数的类型
 type ClientRPCInterceptor func(info RPCInfo, next ClientRPCHandler) ClientRPCHandler
+
+// ClientRPCHandler 客户端RPC处理函数的类型
 type ClientRPCHandler func(ctx context.Context, req proto.Message, opts ...RequestOption) (proto.Message, error)
 
 func WithClientRPCInterceptors(interceptors ...ClientRPCInterceptor) ClientOption {
@@ -94,25 +105,31 @@ func WithClientRPCInterceptors(interceptors ...ClientRPCInterceptor) ClientOptio
 	}
 }
 
+// ClientMultiRPCInterceptor 客户端多RPC拦截器函数的类型
 type ClientMultiRPCInterceptor func(info RPCInfo, next ClientMultiRPCHandler) ClientMultiRPCHandler
+
+// ClientMultiRPCHandler 客户端多RPC处理接口
 type ClientMultiRPCHandler interface {
 	Send(ctx context.Context, msg proto.Message, opts ...RequestOption) error
 	Recv(msg proto.Message, err error)
 	Close()
 }
 
+// WithClientMultiRPCInterceptors 设置客户端多RPC拦截器
 func WithClientMultiRPCInterceptors(interceptors ...ClientMultiRPCInterceptor) ClientOption {
 	return func(o *ClientOpts) {
 		o.MultiRPCInterceptors = append(o.MultiRPCInterceptors, interceptors...)
 	}
 }
 
+// WithClientStreamInterceptors 设置客户端流拦截器
 func WithClientStreamInterceptors(interceptors ...StreamInterceptor) ClientOption {
 	return func(o *ClientOpts) {
 		o.StreamInterceptors = append(o.StreamInterceptors, interceptors...)
 	}
 }
 
+// WithClientOptions 将多个客户端选项组合成一个选项
 func WithClientOptions(opts ...ClientOption) ClientOption {
 	return func(o *ClientOpts) {
 		for _, opt := range opts {

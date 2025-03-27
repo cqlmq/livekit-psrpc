@@ -21,14 +21,17 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// Metadata 是一个字符串到字符串的映射
 type Metadata map[string]string
 
+// Header 是一个包含远程ID、发送时间和元数据的结构体
 type Header struct {
 	RemoteID string
 	SentAt   time.Time
 	Metadata Metadata
 }
 
+// ctxMD 是一个包含元数据和添加的键值对的结构体
 type ctxMD struct {
 	md    Metadata
 	added [][]string

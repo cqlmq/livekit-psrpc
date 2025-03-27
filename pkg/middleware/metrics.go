@@ -68,6 +68,7 @@ func WithServerMetrics(observer MetricsObserver) psrpc.ServerOption {
 	)
 }
 
+// newClientRPCMetricsInterceptor 创建一个客户端RPC拦截器
 func newClientRPCMetricsInterceptor(observer MetricsObserver) psrpc.ClientRPCInterceptor {
 	return func(rpcInfo psrpc.RPCInfo, next psrpc.ClientRPCHandler) psrpc.ClientRPCHandler {
 		return func(ctx context.Context, req proto.Message, opts ...psrpc.RequestOption) (res proto.Message, err error) {
@@ -80,6 +81,7 @@ func newClientRPCMetricsInterceptor(observer MetricsObserver) psrpc.ClientRPCInt
 	}
 }
 
+// newServerRPCMetricsInterceptor 创建一个服务器RPC拦截器
 func newServerRPCMetricsInterceptor(observer MetricsObserver) psrpc.ServerRPCInterceptor {
 	return func(ctx context.Context, req proto.Message, rpcInfo psrpc.RPCInfo, handler psrpc.ServerRPCHandler) (res proto.Message, err error) {
 		start := time.Now()
@@ -100,6 +102,7 @@ func newServerRPCMetricsInterceptor(observer MetricsObserver) psrpc.ServerRPCInt
 	}
 }
 
+// newStreamMetricsInterceptor 创建一个流拦截器
 func newStreamMetricsInterceptor(observer MetricsObserver, role MetricRole) psrpc.StreamInterceptor {
 	return func(rpcInfo psrpc.RPCInfo, next psrpc.StreamHandler) psrpc.StreamHandler {
 		observer.OnStreamOpen(role, rpcInfo)

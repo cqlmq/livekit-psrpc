@@ -20,15 +20,17 @@ import (
 	"github.com/livekit/psrpc/internal/interceptors"
 )
 
+// getServerOpts 获取服务器选项
 func getServerOpts(opts ...psrpc.ServerOption) psrpc.ServerOpts {
 	o := &psrpc.ServerOpts{
-		Timeout:     psrpc.DefaultServerTimeout,
-		ChannelSize: bus.DefaultChannelSize,
+		Timeout:     psrpc.DefaultServerTimeout, // 默认服务器超时时间
+		ChannelSize: bus.DefaultChannelSize,     // 默认通道大小
 	}
 	for _, opt := range opts {
-		opt(o)
+		opt(o) // 把opt中的值赋给o
 	}
 
+	// 链式拦截器
 	o.ChainedInterceptor = interceptors.ChainServerInterceptors(o.Interceptors)
 	return *o
 }

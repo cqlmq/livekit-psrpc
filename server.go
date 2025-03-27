@@ -33,7 +33,7 @@ type ServerOpts struct {
 	ChannelSize        int                    // 通道大小
 	Interceptors       []ServerRPCInterceptor // 服务器RPC拦截器
 	StreamInterceptors []StreamInterceptor    // 流拦截器
-	ChainedInterceptor ServerRPCInterceptor   // 链式拦截器
+	ChainedInterceptor ServerRPCInterceptor   // 链式拦截器 把多个服务器拦截器Interceptors串联起来，形成一个拦截器
 }
 
 // WithServerID 设置服务器ID
