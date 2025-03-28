@@ -30,6 +30,8 @@ import (
 	"github.com/livekit/psrpc/pkg/rand"
 )
 
+// RequestSingle 发送单个请求, 返回单个响应
+// 备注： 这个函数在psrpc中是核心函数，几乎所有请求都是通过这个函数发送的
 func RequestSingle[ResponseType proto.Message](
 	ctx context.Context,
 	c *RPCClient,
@@ -61,7 +63,7 @@ func RequestSingle[ResponseType proto.Message](
 		c.RpcInterceptors,
 		getRequestOpts(ctx, i, c.ClientOpts, opts...).Interceptors,
 	)
-	handler := interceptors.ChainClientInterceptors[psrpc.ClientRPCHandler](
+	handler := interceptors.ChainClientInterceptors(
 		reqInterceptors, i, newRPC[ResponseType](c, i),
 	)
 
@@ -73,6 +75,7 @@ func RequestSingle[ResponseType proto.Message](
 	return
 }
 
+// newRPC 创建一个RPC处理函数
 func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc.ClientRPCHandler {
 	return func(ctx context.Context, request proto.Message, opts ...psrpc.RequestOption) (response proto.Message, err error) {
 		o := getRequestOpts(ctx, i, c.ClientOpts, opts...)
@@ -85,6 +88,8 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 
 		requestID := rand.NewRequestID()
 		now := time.Now()
+
+		// 创建一个请求对象
 		req := &internal.Request{
 			RequestId:  requestID,
 			ClientId:   c.ID,
@@ -95,8 +100,8 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 			Metadata:   metadata.OutgoingContextMetadata(ctx),
 		}
 
-		var claimChan chan *internal.ClaimRequest
-		resChan := make(chan *internal.Response, 1)
+		var claimChan chan *internal.ClaimRequest   // 声明请求通道
+		resChan := make(chan *internal.Response, 1) // 响应通道
 
 		c.mu.Lock()
 		if i.RequireClaim {
@@ -115,6 +120,7 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 			c.mu.Unlock()
 		}()
 
+		// 将请求发布到通道
 		if err = c.bus.Publish(ctx, i.GetRPCChannel(), req); err != nil {
 			err = psrpc.NewError(psrpc.Internal, err)
 			return
@@ -123,12 +129,15 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 		ctx, cancel := context.WithTimeout(ctx, o.Timeout)
 		defer cancel()
 
+		// 如果需要声明请求 （以后研究这个有什么作用）
 		if i.RequireClaim {
+			// 选择一个服务器
 			serverID, err := selectServer(ctx, claimChan, resChan, o.SelectionOpts)
 			if err != nil {
 				return nil, err
 			}
 
+			// 将声明请求发布到通道
 			if err = c.bus.Publish(ctx, i.GetClaimResponseChannel(), &internal.ClaimResponse{
 				RequestId: requestID,
 				ServerId:  serverID,

@@ -36,11 +36,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Msg 消息结构体
 type Msg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TypeUrl       string                 `protobuf:"bytes,1,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
-	Value         []byte                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	Channel       string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`
+	TypeUrl       string                 `protobuf:"bytes,1,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"` // 类型URL
+	Value         []byte                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`                    // 值
+	Channel       string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`                // 通道
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -96,9 +97,10 @@ func (x *Msg) GetChannel() string {
 	return ""
 }
 
+// Channel 通道结构体
 type Channel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channel       string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`
+	Channel       string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"` // 通道
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -140,16 +142,17 @@ func (x *Channel) GetChannel() string {
 	return ""
 }
 
+// Request 请求结构体
 type Request struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	SentAt        int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
-	Expiry        int64                  `protobuf:"varint,4,opt,name=expiry,proto3" json:"expiry,omitempty"`
-	Multi         bool                   `protobuf:"varint,5,opt,name=multi,proto3" json:"multi,omitempty"`
-	Request       *anypb.Any             `protobuf:"bytes,6,opt,name=request,proto3" json:"request,omitempty"`
-	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	RawRequest    []byte                 `protobuf:"bytes,8,opt,name=raw_request,json=rawRequest,proto3" json:"raw_request,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`                                                        // 请求ID
+	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`                                                           // 客户端ID
+	SentAt        int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`                                                                // 发送时间
+	Expiry        int64                  `protobuf:"varint,4,opt,name=expiry,proto3" json:"expiry,omitempty"`                                                                              // 过期时间
+	Multi         bool                   `protobuf:"varint,5,opt,name=multi,proto3" json:"multi,omitempty"`                                                                                // 是否多路复用
+	Request       *anypb.Any             `protobuf:"bytes,6,opt,name=request,proto3" json:"request,omitempty"`                                                                             // 请求消息体？（protobuf格式）
+	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 元数据
+	RawRequest    []byte                 `protobuf:"bytes,8,opt,name=raw_request,json=rawRequest,proto3" json:"raw_request,omitempty"`                                                     // 原始请求
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -240,16 +243,17 @@ func (x *Request) GetRawRequest() []byte {
 	return nil
 }
 
+// Response 响应结构体
 type Response struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
-	SentAt        int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
-	Response      *anypb.Any             `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
-	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	Code          string                 `protobuf:"bytes,6,opt,name=code,proto3" json:"code,omitempty"`
-	RawResponse   []byte                 `protobuf:"bytes,7,opt,name=raw_response,json=rawResponse,proto3" json:"raw_response,omitempty"`
-	ErrorDetails  []*anypb.Any           `protobuf:"bytes,8,rep,name=error_details,json=errorDetails,proto3" json:"error_details,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`          // 请求ID
+	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`             // 服务器ID
+	SentAt        int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`                  // 发送时间
+	Response      *anypb.Any             `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`                             // 响应消息体？（protobuf格式）
+	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`                                   // 错误信息
+	Code          string                 `protobuf:"bytes,6,opt,name=code,proto3" json:"code,omitempty"`                                     // 错误代码
+	RawResponse   []byte                 `protobuf:"bytes,7,opt,name=raw_response,json=rawResponse,proto3" json:"raw_response,omitempty"`    // 原始响应
+	ErrorDetails  []*anypb.Any           `protobuf:"bytes,8,rep,name=error_details,json=errorDetails,proto3" json:"error_details,omitempty"` // 错误详情（protobuf格式）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -340,11 +344,12 @@ func (x *Response) GetErrorDetails() []*anypb.Any {
 	return nil
 }
 
+// ClaimRequest Claim请求结构体
 type ClaimRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
-	Affinity      float32                `protobuf:"fixed32,3,opt,name=affinity,proto3" json:"affinity,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 请求ID
+	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`    // 服务器ID
+	Affinity      float32                `protobuf:"fixed32,3,opt,name=affinity,proto3" json:"affinity,omitempty"`                  // 亲和力
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,10 +405,11 @@ func (x *ClaimRequest) GetAffinity() float32 {
 	return 0
 }
 
+// ClaimResponse Claim响应结构体
 type ClaimResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 请求ID
+	ServerId      string                 `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`    // 服务器ID
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -452,12 +458,13 @@ func (x *ClaimResponse) GetServerId() string {
 	return ""
 }
 
+// Stream 流结构体
 type Stream struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	StreamId  string                 `protobuf:"bytes,1,opt,name=stream_id,json=streamId,proto3" json:"stream_id,omitempty"`
-	RequestId string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	SentAt    int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
-	Expiry    int64                  `protobuf:"varint,4,opt,name=expiry,proto3" json:"expiry,omitempty"`
+	StreamId  string                 `protobuf:"bytes,1,opt,name=stream_id,json=streamId,proto3" json:"stream_id,omitempty"`    // 流ID
+	RequestId string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 请求ID
+	SentAt    int64                  `protobuf:"varint,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`         // 发送时间
+	Expiry    int64                  `protobuf:"varint,4,opt,name=expiry,proto3" json:"expiry,omitempty"`                       // 过期时间
 	// Types that are valid to be assigned to Body:
 	//
 	//	*Stream_Open
@@ -575,19 +582,19 @@ type isStream_Body interface {
 }
 
 type Stream_Open struct {
-	Open *StreamOpen `protobuf:"bytes,6,opt,name=open,proto3,oneof"`
+	Open *StreamOpen `protobuf:"bytes,5,opt,name=open,proto3,oneof"` // 流打开
 }
 
 type Stream_Message struct {
-	Message *StreamMessage `protobuf:"bytes,7,opt,name=message,proto3,oneof"`
+	Message *StreamMessage `protobuf:"bytes,6,opt,name=message,proto3,oneof"` // 流消息
 }
 
 type Stream_Ack struct {
-	Ack *StreamAck `protobuf:"bytes,8,opt,name=ack,proto3,oneof"`
+	Ack *StreamAck `protobuf:"bytes,7,opt,name=ack,proto3,oneof"` // 流确认
 }
 
 type Stream_Close struct {
-	Close *StreamClose `protobuf:"bytes,9,opt,name=close,proto3,oneof"`
+	Close *StreamClose `protobuf:"bytes,8,opt,name=close,proto3,oneof"` // 流关闭
 }
 
 func (*Stream_Open) isStream_Body() {}
@@ -598,10 +605,11 @@ func (*Stream_Ack) isStream_Body() {}
 
 func (*Stream_Close) isStream_Body() {}
 
+// StreamOpen 流打开结构体
 type StreamOpen struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
-	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`                                                                 // 节点ID
+	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 元数据
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -652,8 +660,8 @@ func (x *StreamOpen) GetMetadata() map[string]string {
 
 type StreamMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       *anypb.Any             `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
-	RawMessage    []byte                 `protobuf:"bytes,2,opt,name=raw_message,json=rawMessage,proto3" json:"raw_message,omitempty"`
+	Message       *anypb.Any             `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`                         // 消息体？（protobuf格式）
+	RawMessage    []byte                 `protobuf:"bytes,2,opt,name=raw_message,json=rawMessage,proto3" json:"raw_message,omitempty"` // 原始消息
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -702,6 +710,7 @@ func (x *StreamMessage) GetRawMessage() []byte {
 	return nil
 }
 
+// StreamAck 流确认结构体
 type StreamAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -738,10 +747,11 @@ func (*StreamAck) Descriptor() ([]byte, []int) {
 	return file_internal_proto_rawDescGZIP(), []int{9}
 }
 
+// StreamClose 流关闭结构体
 type StreamClose struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"` // 错误信息
+	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`   // 错误代码
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -862,16 +872,16 @@ var file_internal_proto_rawDesc = string([]byte{
 	0x0a, 0x07, 0x73, 0x65, 0x6e, 0x74, 0x5f, 0x61, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52,
 	0x06, 0x73, 0x65, 0x6e, 0x74, 0x41, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x78, 0x70, 0x69, 0x72,
 	0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x65, 0x78, 0x70, 0x69, 0x72, 0x79, 0x12,
-	0x2a, 0x0a, 0x04, 0x6f, 0x70, 0x65, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e,
+	0x2a, 0x0a, 0x04, 0x6f, 0x70, 0x65, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e,
 	0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4f,
 	0x70, 0x65, 0x6e, 0x48, 0x00, 0x52, 0x04, 0x6f, 0x70, 0x65, 0x6e, 0x12, 0x33, 0x0a, 0x07, 0x6d,
-	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x69,
+	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x69,
 	0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
-	0x12, 0x27, 0x0a, 0x03, 0x61, 0x63, 0x6b, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e,
+	0x12, 0x27, 0x0a, 0x03, 0x61, 0x63, 0x6b, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e,
 	0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x41,
 	0x63, 0x6b, 0x48, 0x00, 0x52, 0x03, 0x61, 0x63, 0x6b, 0x12, 0x2d, 0x0a, 0x05, 0x63, 0x6c, 0x6f,
-	0x73, 0x65, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x73, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
 	0x6e, 0x61, 0x6c, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x48,
 	0x00, 0x52, 0x05, 0x63, 0x6c, 0x6f, 0x73, 0x65, 0x42, 0x06, 0x0a, 0x04, 0x62, 0x6f, 0x64, 0x79,
 	0x22, 0xa2, 0x01, 0x0a, 0x0a, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4f, 0x70, 0x65, 0x6e, 0x12,

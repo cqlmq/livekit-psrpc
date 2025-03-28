@@ -26,9 +26,9 @@ const (
 
 // Channel 消息通道
 type Channel struct {
-	Legacy string // 目前使用此字段做为频道名称
-	Server string // ?
-	Local  string // ?
+	Legacy string // 通用？
+	Server string // 服务端使用
+	Local  string // 本地使用
 }
 
 // MessageBus 消息总线接口定义

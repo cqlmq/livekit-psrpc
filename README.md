@@ -56,9 +56,11 @@ option go_package = "/api";
 
 service MyService {
   // A normal RPC - one request, one response. The request will be handled by the first available server
+  // 一个常规RPC，这个请求将被第一个可用的服务器处理 
   rpc NormalRPC(MyRequest) returns (MyResponse);
 
   // An RPC with a server affinity function for handler selection.
+  // 
   rpc IntensiveRPC(MyRequest) returns (MyResponse) {
     option (psrpc.options).type = AFFINITY;
   };

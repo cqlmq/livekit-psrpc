@@ -19,75 +19,85 @@ option go_package = "github.com/livekit/psrpc/internal";
 
 import "google/protobuf/any.proto";
 
+// Msg 消息结构体
 message Msg {
-  string type_url = 1;
-  bytes value = 2;
-  string channel = 3;
+  string type_url = 1; // 类型URL
+  bytes value = 2; // 值
+  string channel = 3; // 通道
 }
 
+// Channel 通道结构体
 message Channel {
-  string channel = 3;
+  string channel = 3; // 通道
 }
 
+// Request 请求结构体
 message Request {
-  string request_id = 1;
-  string client_id = 2;
-  int64 sent_at = 3;
-  int64 expiry = 4;
-  bool multi = 5;
-  google.protobuf.Any request = 6;
-  map<string, string> metadata = 7;
-  bytes raw_request = 8;
+  string request_id = 1; // 请求ID
+  string client_id = 2; // 客户端ID
+  int64 sent_at = 3; // 发送时间
+  int64 expiry = 4; // 过期时间
+  bool multi = 5; // 是否多路复用
+  google.protobuf.Any request = 6; // 请求消息体？（protobuf格式）
+  map<string, string> metadata = 7; // 元数据
+  bytes raw_request = 8; // 原始请求
 }
 
+// Response 响应结构体
 message Response {
-  string request_id = 1;
-  string server_id = 2;
-  int64 sent_at = 3;
-  google.protobuf.Any response = 4;
-  string error = 5;
-  string code = 6;
-  bytes raw_response = 7;
-  repeated google.protobuf.Any error_details = 8;
+  string request_id = 1; // 请求ID
+  string server_id = 2; // 服务器ID
+  int64 sent_at = 3; // 发送时间
+  google.protobuf.Any response = 4; // 响应消息体？（protobuf格式）
+  string error = 5; // 错误信息
+  string code = 6; // 错误代码
+  bytes raw_response = 7; // 原始响应
+  repeated google.protobuf.Any error_details = 8; // 错误详情（protobuf格式）
 }
 
+// ClaimRequest Claim请求结构体
 message ClaimRequest {
-  string request_id = 1;
-  string server_id = 2;
-  float affinity = 3;
+  string request_id = 1; // 请求ID
+  string server_id = 2; // 服务器ID
+  float affinity = 3; // 亲和力
 }
 
+// ClaimResponse Claim响应结构体
 message ClaimResponse {
-  string request_id = 1;
-  string server_id = 2;
+  string request_id = 1; // 请求ID
+  string server_id = 2; // 服务器ID
 }
 
+// Stream 流结构体
 message Stream {
-  string stream_id = 1;
-  string request_id = 2;
-  int64 sent_at = 3;
-  int64 expiry = 4;
+  string stream_id = 1; // 流ID
+  string request_id = 2; // 请求ID
+  int64 sent_at = 3; // 发送时间
+  int64 expiry = 4; // 过期时间
   oneof body {
-    StreamOpen open = 6;
-    StreamMessage message = 7;
-    StreamAck ack = 8;
-    StreamClose close = 9;
+    StreamOpen open = 5; // 流打开
+    StreamMessage message = 6; // 流消息
+    StreamAck ack = 7; // 流确认
+    StreamClose close = 8; // 流关闭
   }
 }
 
+// StreamOpen 流打开结构体
 message StreamOpen {
-  string node_id = 1;
-  map<string, string> metadata = 7;
+  string node_id = 1; // 节点ID
+  map<string, string> metadata = 7; // 元数据
 }
 
 message StreamMessage {
-  google.protobuf.Any message = 1;
-  bytes raw_message = 2;
+  google.protobuf.Any message = 1; // 消息体？（protobuf格式）
+  bytes raw_message = 2; // 原始消息
 }
 
+// StreamAck 流确认结构体
 message StreamAck {}
 
+// StreamClose 流关闭结构体
 message StreamClose {
-  string error = 1;
-  string code = 2;
+  string error = 1; // 错误信息
+  string code = 2; // 错误代码
 }

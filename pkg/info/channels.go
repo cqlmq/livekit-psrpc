@@ -47,10 +47,11 @@ func GetStreamChannel(service, nodeID string) bus.Channel {
 	}
 }
 
+// GetResponseChannel 获取响应通道
 func GetResponseChannel(service, clientID string) bus.Channel {
 	return bus.Channel{
-		Legacy: formatChannel('|', service, clientID, "RES"),
-		Server: formatClientChannel(service, clientID, "RES"),
+		Legacy: formatChannel('|', service, clientID, "RES"),  // 格式：服务名称|客户端ID|RES
+		Server: formatClientChannel(service, clientID, "RES"), // 格式：CLI.服务名称.客户端ID.RES
 	}
 }
 
@@ -92,6 +93,8 @@ var scratch = &sync.Pool{
 	},
 }
 
+// formatClientChannel 格式化客户端通道
+// 格式：CLI.服务名称.客户端ID.通道名称
 func formatClientChannel(service, clientID, channel string) string {
 	p := scratch.Get().(*[]byte)
 	defer scratch.Put(p)
@@ -130,12 +133,14 @@ func formatServerChannel(service string, topic []string, queue bool) string {
 	return string(b)
 }
 
+// formatChannel 将字符串或字符串数组转换成合法的通道名称，并添加分隔符
 func formatChannel(delim byte, parts ...any) string {
 	p := scratch.Get().(*[]byte)
 	defer scratch.Put(p)
 	return string(appendChannelParts(*p, delim, parts...))
 }
 
+// appendChannelParts 将字符串或字符串数组转换成合法的通道名称，并添加分隔符
 func appendChannelParts[T any](buf []byte, delim byte, parts ...T) []byte {
 	var prefix bool
 	for _, t := range parts {
@@ -154,6 +159,10 @@ func appendChannelParts[T any](buf []byte, delim byte, parts ...T) []byte {
 	return buf
 }
 
+// 将字符串转换为合法的通道名称
+// 合法的通道名称只能包含0-9, A-Z, a-z, _
+// 其它字符转换为小写的utf-8编码的字符串 如果 #世界 => u+0023u+4e16u+754c
+// 适合多语言环境下使用更为标准通用
 func appendSanitizedChannelPart(buf []byte, s string) []byte {
 	for _, r := range s {
 		if unicode.Is(channelChar, r) {

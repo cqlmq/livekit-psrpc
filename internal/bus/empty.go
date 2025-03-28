@@ -14,12 +14,15 @@
 
 package bus
 
+// EmptySubscription 空订阅
 type EmptySubscription[MessageType any] struct{}
 
+// Channel 返回空通道
 func (s EmptySubscription[MessageType]) Channel() <-chan MessageType {
 	return nil
 }
 
+// Close 关闭空订阅（什么也不做）
 func (s EmptySubscription[MessageType]) Close() error {
 	return nil
 }

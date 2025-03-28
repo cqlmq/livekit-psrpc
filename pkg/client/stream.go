@@ -72,7 +72,7 @@ func OpenStream[SendType, RecvType proto.Message](
 	}()
 
 	ackChan := make(chan struct{})
-	cs := stream.NewStream[SendType, RecvType](
+	cs := stream.NewStream[SendType](
 		ctx,
 		i,
 		streamID,

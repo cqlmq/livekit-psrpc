@@ -35,7 +35,7 @@ type RPCClient struct {
 	claimRequests           map[string]chan *internal.ClaimRequest // 声明请求
 	responseChannels        map[string]chan *internal.Response     // 响应通道
 	streamChannels          map[string]chan *internal.Stream       // 流通道
-	closed                  core.Fuse                              // 关闭熔断器
+	closed                  core.Fuse                              // 关闭标识
 }
 
 // NewRPCClientWithStreams 创建一个带有流的RPC客户端
@@ -48,6 +48,9 @@ func NewRPCClientWithStreams(
 }
 
 // NewRPCClient 创建一个RPC客户端
+// 创建一个客户端时，会订阅响应、声明请求、流，
+// 然后会启动一个协程，从订阅通道读取消息到本地
+// 本地会根据请求ID将消息放入对应的通道中，方便后续根据请求ID获取消息
 func NewRPCClient(
 	sd *info.ServiceDefinition,
 	b bus.MessageBus,
@@ -66,6 +69,7 @@ func NewRPCClient(
 	}
 
 	ctx := context.Background()
+	// 备注：虽然GetResponseChannel返回了一个对象，但redis,local好像只使用了channel.Legacy, Nats好像只使用了channel.Server
 	responses, err := bus.Subscribe[*internal.Response](
 		ctx, c.bus, info.GetResponseChannel(c.Name, c.ID), c.ChannelSize,
 	)
@@ -99,25 +103,25 @@ func NewRPCClient(
 		closed := c.closed.Watch()
 		for {
 			select {
-			case <-closed:
+			case <-closed: // 关闭熔断器
 				_ = claims.Close()
 				_ = responses.Close()
 				_ = streams.Close()
 				return
 
-			case claim := <-claims.Channel():
-				if claim == nil {
+			case claim := <-claims.Channel(): // 声明请求
+				if claim == nil { // 如果声明请求为空，则关闭客户端
 					c.Close()
 					continue
 				}
 				c.mu.RLock()
-				claimChan, ok := c.claimRequests[claim.RequestId]
+				claimChan, ok := c.claimRequests[claim.RequestId] // 获取声明请求通道
 				c.mu.RUnlock()
 				if ok {
-					claimChan <- claim
+					claimChan <- claim // 将声明请求放入通道
 				}
 
-			case res := <-responses.Channel():
+			case res := <-responses.Channel(): // 响应
 				if res == nil {
 					c.Close()
 					continue
@@ -129,8 +133,8 @@ func NewRPCClient(
 					resChan <- res
 				}
 
-			case msg := <-streams.Channel():
-				if msg == nil {
+			case msg := <-streams.Channel(): // 流，如果空订阅，从 nil 通道读取会永远阻塞（相当于不执行这个分支）
+				if msg == nil { // 如果流为空，则关闭客户端
 					c.Close()
 					continue
 				}

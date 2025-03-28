@@ -28,6 +28,7 @@ func NewLocalMessageBus() MessageBus {
 	return bus.NewLocalMessageBus()
 }
 
+// 目前还没有使用Nats，难道是为以后使用Nats做准备？
 func NewNatsMessageBus(nc *nats.Conn) MessageBus {
 	return bus.NewNatsMessageBus(nc)
 }

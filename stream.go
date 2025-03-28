@@ -35,10 +35,10 @@ func WithTimeout(timeout time.Duration) StreamOption {
 	}
 }
 
-// StreamInterceptor 流拦截器函数类型
+// StreamInterceptor 流拦截器类型
 type StreamInterceptor func(info RPCInfo, next StreamHandler) StreamHandler
 
-// StreamHandler 流处理函数类型
+// StreamHandler 流处理接口
 type StreamHandler interface {
 	Recv(msg proto.Message) error
 	Send(msg proto.Message, opts ...StreamOption) error

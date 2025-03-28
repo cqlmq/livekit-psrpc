@@ -22,8 +22,8 @@ import (
 
 // ServiceDefinition 服务定义结构体
 type ServiceDefinition struct {
-	Name    string   // 服务名称
-	ID      string   // 服务ID
+	Name    string   // 名称
+	ID      string   // 标识
 	Methods sync.Map // 方法集合
 }
 

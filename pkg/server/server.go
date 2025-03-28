@@ -166,6 +166,9 @@ func (s *RPCServer) DeregisterHandler(rpc string, topic []string) {
 // Publish 发布一个消息
 func (s *RPCServer) Publish(ctx context.Context, rpc string, topic []string, msg proto.Message) error {
 	i := s.GetInfo(rpc, topic)
+	// 这里打印发着的消息
+	// fmt.Println("Publish================channel==", i.GetRPCChannel().Legacy)
+	// fmt.Println("Publish================msg==", msg)
 	return s.bus.Publish(ctx, i.GetRPCChannel(), msg)
 }
 
