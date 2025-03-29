@@ -62,7 +62,7 @@ func WithSelectionOpts(opts SelectionOpts) RequestOption {
 
 // RequestInterceptor 请求拦截器接口
 type RequestInterceptor interface {
-	ClientRPCInterceptor | ClientMultiRPCInterceptor | StreamInterceptor
+	ClientRPCInterceptor | ClientMultiRPCInterceptor | StreamInterceptor // 请求拦截器接口
 }
 
 // WithRequestInterceptors 设置请求拦截器

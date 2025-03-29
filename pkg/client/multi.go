@@ -44,7 +44,7 @@ func RequestMulti[ResponseType proto.Message](
 
 	i := c.GetInfo(rpc, topic)
 
-	// request hooks
+	// request hooks 请求钩子
 	for _, hook := range c.RequestHooks {
 		hook(ctx, request, i.RPCInfo)
 	}
@@ -57,15 +57,18 @@ func RequestMulti[ResponseType proto.Message](
 		resChan:   resChan,
 	}
 
+	// 获取拦截器链, 在给定拦截器基础上添加请求拦截器
 	reqInterceptors := getRequestInterceptors(
 		c.MultiRPCInterceptors,
 		getRequestOpts(ctx, i, c.ClientOpts, opts...).Interceptors,
 	)
+	// 创建拦截器链, 拦截器链, 请求信息, 多路复用RPC
 	m.handler = interceptors.ChainClientInterceptors[psrpc.ClientMultiRPCHandler](
 		reqInterceptors, i, m,
 	)
 
 	if err = m.handler.Send(ctx, request, opts...); err != nil {
+		// response hooks 响应钩子
 		for _, hook := range c.ResponseHooks {
 			hook(ctx, request, i.RPCInfo, nil, err)
 		}
@@ -75,7 +78,7 @@ func RequestMulti[ResponseType proto.Message](
 	return resChan, nil
 }
 
-// multiRPC 是一个多路复用RPC
+// multiRPC 多路复用RPC
 type multiRPC[ResponseType proto.Message] struct {
 	c         *RPCClient
 	i         *info.RequestInfo

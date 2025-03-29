@@ -26,7 +26,7 @@ import (
 	"github.com/livekit/mageutil"
 )
 
-var Default = Test
+var Default = Generate
 
 func Install() error {
 	return mageutil.Run(context.Background(), "go install ./protoc-gen-psrpc")
