@@ -17,6 +17,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -30,6 +31,7 @@ import (
 	"github.com/livekit/psrpc/pkg/rand"
 )
 
+// OpenStream 打开流
 func OpenStream[SendType, RecvType proto.Message](
 	ctx context.Context,
 	c *RPCClient,
@@ -88,6 +90,8 @@ func OpenStream[SendType, RecvType proto.Message](
 	ctx, cancel := context.WithTimeout(ctx, o.Timeout)
 	defer cancel()
 
+	// 把一个流信息（Open）发布到服务器
+	fmt.Println("OpenStream 发布流信息到服务器,topic:", i.GetStreamServerChannel())
 	if err := c.bus.Publish(ctx, i.GetStreamServerChannel(), req); err != nil {
 		_ = cs.Close(err)
 		return nil, psrpc.NewError(psrpc.Internal, err)

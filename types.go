@@ -47,7 +47,7 @@ type ClientStream[SendType, RecvType proto.Message] interface {
 	Stream[SendType, RecvType]
 }
 
-// ServerStream 服务端流消息接口
+// ServerStream 服务端流消息接口（比ClientStream多了Hijack方法）
 type ServerStream[SendType, RecvType proto.Message] interface {
 	Stream[SendType, RecvType]
 	Hijack()

@@ -32,26 +32,29 @@ import (
 	"github.com/livekit/psrpc/pkg/metadata"
 )
 
+// StreamAffinityFunc 流亲和力函数
 type StreamAffinityFunc func(ctx context.Context) float32
 
+// streamHandler 流处理程序
 type streamHandler[RecvType, SendType proto.Message] struct {
-	i *info.RequestInfo
+	i *info.RequestInfo // 请求信息
 
-	handler      func(psrpc.ServerStream[SendType, RecvType]) error
-	interceptors []psrpc.StreamInterceptor
-	affinityFunc StreamAffinityFunc
+	handler func(psrpc.ServerStream[SendType, RecvType]) error // 处理函数
+	// interceptors []psrpc.StreamInterceptor
+	affinityFunc StreamAffinityFunc // 亲和力函数
 
 	mu          sync.RWMutex
-	streamSub   bus.Subscription[*internal.Stream]
-	claimSub    bus.Subscription[*internal.ClaimResponse]
-	streams     map[string]stream.Stream[SendType, RecvType]
-	claims      map[string]chan *internal.ClaimResponse
-	draining    atomic.Bool
-	closeOnce   sync.Once
-	complete    chan struct{}
-	onCompleted func()
+	streamSub   bus.Subscription[*internal.Stream]           // 流订阅
+	claimSub    bus.Subscription[*internal.ClaimResponse]    // 声明订阅
+	streams     map[string]stream.Stream[SendType, RecvType] // 流集合
+	claims      map[string]chan *internal.ClaimResponse      // 声明集合
+	draining    atomic.Bool                                  // 是否正在关闭
+	closeOnce   sync.Once                                    // 关闭一次
+	complete    chan struct{}                                // 完成通道
+	onCompleted func()                                       // 完成回调
 }
 
+// newStreamRPCHandler 创建一个流处理程序
 func newStreamRPCHandler[RecvType, SendType proto.Message](
 	s *RPCServer,
 	i *info.RequestInfo,
@@ -93,6 +96,7 @@ func newStreamRPCHandler[RecvType, SendType proto.Message](
 	return h, nil
 }
 
+// run 运行一个线程，处理请求，一个注册handler对应一个线程?
 func (h *streamHandler[RecvType, SendType]) run(s *RPCServer) {
 	go func() {
 		requests := h.streamSub.Channel()
@@ -100,10 +104,10 @@ func (h *streamHandler[RecvType, SendType]) run(s *RPCServer) {
 
 		for {
 			select {
-			case <-h.complete:
+			case <-h.complete: // 完成
 				return
 
-			case is := <-requests:
+			case is := <-requests: // 流请求 is: internal.Stream
 				if is == nil {
 					continue
 				}
@@ -113,7 +117,7 @@ func (h *streamHandler[RecvType, SendType]) run(s *RPCServer) {
 					}
 				}
 
-			case claim := <-claims:
+			case claim := <-claims: // 声明 claim: internal.ClaimResponse
 				if claim == nil {
 					continue
 				}
@@ -128,6 +132,7 @@ func (h *streamHandler[RecvType, SendType]) run(s *RPCServer) {
 	}()
 }
 
+// handleRequest 处理流请求
 func (h *streamHandler[RecvType, SendType]) handleRequest(
 	s *RPCServer,
 	is *internal.Stream,
@@ -138,6 +143,7 @@ func (h *streamHandler[RecvType, SendType]) handleRequest(
 		}
 
 		go func() {
+			// 处理流打开请求
 			if err := h.handleOpenRequest(s, is, open); err != nil {
 				logger.Error(err, "stream handler failed", "requestID", is.RequestId)
 			}
@@ -154,6 +160,7 @@ func (h *streamHandler[RecvType, SendType]) handleRequest(
 	return nil
 }
 
+// handleOpenRequest 处理流打开请求
 func (h *streamHandler[RecvType, SendType]) handleOpenRequest(
 	s *RPCServer,
 	is *internal.Stream,
@@ -175,7 +182,7 @@ func (h *streamHandler[RecvType, SendType]) handleOpenRequest(
 		}
 	}
 
-	ss := stream.NewStream[SendType, RecvType](
+	ss := stream.NewStream[SendType, RecvType]( // RecvType可以从recvChan中推断出来，所以可以省略
 		ctx,
 		h.i,
 		is.StreamId,
@@ -194,11 +201,13 @@ func (h *streamHandler[RecvType, SendType]) handleOpenRequest(
 	h.streams[is.StreamId] = ss
 	h.mu.Unlock()
 
+	// 确认流请求
 	if err := ss.Ack(octx, is); err != nil {
 		_ = ss.Close(err)
 		return err
 	}
 
+	// 处理流
 	err := h.handler(ss)
 	if !ss.Hijacked() {
 		_ = ss.Close(err)
@@ -287,12 +296,14 @@ func (h *streamHandler[RecvType, SendType]) close(force bool) {
 	<-h.complete
 }
 
+// serverStream 服务器流
 type serverStream[SendType, RecvType proto.Message] struct {
-	h      *streamHandler[SendType, RecvType]
-	s      *RPCServer
-	nodeID string
+	h      *streamHandler[SendType, RecvType] // 流处理程序
+	s      *RPCServer                         // 服务器
+	nodeID string                             // 节点ID
 }
 
+// Send 发送
 func (s *serverStream[RequestType, ResponseType]) Send(ctx context.Context, msg *internal.Stream) (err error) {
 	if err = s.s.bus.Publish(ctx, info.GetStreamChannel(s.s.Name, s.nodeID), msg); err != nil {
 		err = psrpc.NewError(psrpc.Internal, err)
@@ -300,6 +311,7 @@ func (s *serverStream[RequestType, ResponseType]) Send(ctx context.Context, msg 
 	return
 }
 
+// Close 关闭
 func (s *serverStream[RequestType, ResponseType]) Close(streamID string) {
 	s.h.mu.Lock()
 	delete(s.h.streams, streamID)

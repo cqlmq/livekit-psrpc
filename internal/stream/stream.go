@@ -31,43 +31,74 @@ import (
 	"github.com/livekit/psrpc/pkg/rand"
 )
 
+// 外部接收消息
+// -> HandleStream
+// -> 解码消息
+// -> 通过 recvChan 传递给外部
+// -> 外部处理消息
+
+// Stream 的主要职责：
+// 处理 Stream_Ack：确认机制
+// 处理 Stream_Close：关闭机制
+// 处理 Stream_Message：
+// 解码消息
+// 通过 recvChan 传递给外部
+// 发送确认消息
+// recvChan 的作用：
+// 作为 Stream 和外部之间的桥梁
+// 将解码后的消息传递给外部处理
+// 提供异步处理机制
+// 所以 Stream 确实是一个加工器，它：
+// 处理了底层的消息格式（Ack、Close、Message）
+// 提供了消息的编解码
+// 实现了确认机制
+// 通过 recvChan 将处理后的消息传递给外部
+
+// 发送方 -> 发送消息 -> 接收方 -> 处理消息 -> 发送确认 -> 发送方收到确认
+
+// Stream 流处理
 type Stream[SendType, RecvType proto.Message] interface {
-	psrpc.ServerStream[SendType, RecvType]
+	psrpc.ServerStream[SendType, RecvType] // 继承ServerStream（根目录的types.go中定义）
 
-	Ack(context.Context, *internal.Stream) error
-	HandleStream(is *internal.Stream) error
-	Hijacked() bool
+	// internal,pkg中的包会使用? 外部包应该只使用psrpc.ServerStream？
+	Ack(context.Context, *internal.Stream) error // 确认
+	HandleStream(is *internal.Stream) error      // 处理流
+	Hijacked() bool                              // 是否被劫持
 }
 
+// StreamAdapter 流处理适配器
 type StreamAdapter interface {
-	Send(ctx context.Context, msg *internal.Stream) error
-	Close(streamID string)
+	Send(ctx context.Context, msg *internal.Stream) error // 发送
+	Close(streamID string)                                // 关闭
 }
 
+// stream 流处理实现类
 type stream[SendType, RecvType proto.Message] struct {
 	*streamBase[SendType, RecvType]
 
-	handler  psrpc.StreamHandler
-	hijacked bool
+	handler  psrpc.StreamHandler // 流处理程序(包括拦截) （Send Recv Close）
+	hijacked bool                // 好像只是给流添加一个状态，表示流是否被劫持，怎么使用还得看外部？
 }
 
+// streamBase 流处理基类
 type streamBase[SendType, RecvType proto.Message] struct {
-	psrpc.StreamOpts
+	psrpc.StreamOpts // 继承StreamOpts (Timeout time.Duration)
 
-	ctx      context.Context
-	cancel   context.CancelFunc
-	streamID string
+	ctx      context.Context    // 上下文
+	cancel   context.CancelFunc // 取消
+	streamID string             // 流ID
 
-	adapter  StreamAdapter
-	recvChan chan RecvType
+	adapter  StreamAdapter // 适配器 （Send Close）
+	recvChan chan RecvType // 接收通道
 
-	mu      sync.Mutex
-	pending sync.WaitGroup
-	acks    map[string]chan struct{}
-	closed  bool
-	err     error
+	mu      sync.Mutex               // 互斥锁
+	pending sync.WaitGroup           // 等待组 防止在消息处理过程中过早关闭流
+	acks    map[string]chan struct{} // 确认通道
+	closed  bool                     // 是否关闭
+	err     error                    // 错误
 }
 
+// NewStream 创建一个流式处理
 func NewStream[SendType, RecvType proto.Message](
 	ctx context.Context,
 	i *info.RequestInfo,
@@ -94,28 +125,31 @@ func NewStream[SendType, RecvType proto.Message](
 		streamBase: base,
 		handler: interceptors.ChainClientInterceptors[psrpc.StreamHandler](
 			streamInterceptors, i, base,
-		),
+		), // 拦截器链 注意这里注入了base，stream会（能够）调用base的方法
 	}
 }
 
+// HandleStream 处理流数据
 func (s *stream[SendType, RecvType]) HandleStream(is *internal.Stream) error {
 	switch b := is.Body.(type) {
-	case *internal.Stream_Ack:
+	case *internal.Stream_Ack: // 收到对方的确认消息
 		s.mu.Lock()
 		ack, ok := s.acks[is.RequestId]
 		delete(s.acks, is.RequestId)
 		s.mu.Unlock()
 
 		if ok {
-			close(ack)
+			close(ack) // 关闭确认通道, 通知Send函数已经收到确认消息
 		}
 
 	case *internal.Stream_Message:
+		// 添加等待组
 		if err := s.addPending(); err != nil {
-			return err
+			return err // 如果关闭流后，返回错误，不再处理消息
 		}
-		defer s.pending.Done()
+		defer s.pending.Done() // 处理完消息后，减少等待组计数
 
+		// 解码
 		v, err := bus.DeserializePayload[RecvType](b.Message.RawMessage)
 		if err != nil {
 			err = psrpc.NewError(psrpc.MalformedRequest, err)
@@ -127,10 +161,12 @@ func (s *stream[SendType, RecvType]) HandleStream(is *internal.Stream) error {
 			return err
 		}
 
+		// 处理消息
 		if err := s.handler.Recv(v); err != nil {
 			return err
 		}
 
+		// 发送确认消息（消息已处理？）
 		ctx, cancel := context.WithDeadline(s.ctx, time.Unix(0, is.Expiry))
 		defer cancel()
 		if err := s.Ack(ctx, is); err != nil {
@@ -159,6 +195,7 @@ func (s *stream[SendType, RecvType]) Channel() <-chan RecvType {
 	return s.recvChan
 }
 
+// Ack 确认
 func (s *stream[SendType, RecvType]) Ack(ctx context.Context, is *internal.Stream) error {
 	return s.adapter.Send(ctx, &internal.Stream{
 		StreamId:  is.StreamId,
@@ -171,10 +208,12 @@ func (s *stream[SendType, RecvType]) Ack(ctx context.Context, is *internal.Strea
 	})
 }
 
+// Recv 接收 （外部调用, 将传入处理的有用消息通过通道返回给外部）
 func (s *stream[SendType, RecvType]) Recv(msg proto.Message) error {
 	return s.handler.Recv(msg)
 }
 
+// 接收消息
 func (s *streamBase[SendType, RecvType]) Recv(msg proto.Message) error {
 	select {
 	case s.recvChan <- msg.(RecvType):
@@ -188,6 +227,7 @@ func (s *stream[SendType, RecvType]) Send(request SendType, opts ...psrpc.Stream
 	return s.handler.Send(request, opts...)
 }
 
+// Send 发送
 func (s *streamBase[SendType, RecvType]) Send(msg proto.Message, opts ...psrpc.StreamOption) (err error) {
 	if err := s.addPending(); err != nil {
 		return err
@@ -206,7 +246,7 @@ func (s *streamBase[SendType, RecvType]) Send(msg proto.Message, opts ...psrpc.S
 	requestID := rand.NewRequestID()
 
 	s.mu.Lock()
-	s.acks[requestID] = ackChan
+	s.acks[requestID] = ackChan // 保存确认通道，用于接收对方的确认消息
 	s.mu.Unlock()
 
 	defer func() {
@@ -250,6 +290,7 @@ func (s *streamBase[SendType, RecvType]) Send(msg proto.Message, opts ...psrpc.S
 	return
 }
 
+// Hijack 劫持
 func (s *stream[SendType, RecvType]) Hijack() {
 	s.mu.Lock()
 	s.hijacked = true
@@ -266,6 +307,8 @@ func (s *stream[RequestType, ResponseType]) Close(cause error) error {
 	return s.handler.Close(cause)
 }
 
+// Close 关闭
+// 控制只能真正关闭一次，关闭会发送关闭消息给对方
 func (s *streamBase[RequestType, ResponseType]) Close(cause error) error {
 	if cause == nil {
 		cause = psrpc.ErrStreamClosed
@@ -296,14 +339,15 @@ func (s *streamBase[RequestType, ResponseType]) Close(cause error) error {
 		},
 	})
 
-	s.pending.Wait()
-	s.adapter.Close(s.streamID)
-	s.cancel()
-	close(s.recvChan)
+	s.pending.Wait()            // 等待所有消息处理完成
+	s.adapter.Close(s.streamID) // 关闭流
+	s.cancel()                  // 取消上下文
+	close(s.recvChan)           // 关闭接收通道
 
 	return err
 }
 
+// addPending 添加等待组
 func (s *streamBase[SendType, RecvType]) addPending() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

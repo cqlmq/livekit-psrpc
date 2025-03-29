@@ -120,7 +120,7 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 			c.mu.Unlock()
 		}()
 
-		// 将请求发布到通道
+		// 将请求发布到通道， 备注： 所有服务器收到，但暂不处理，而是会发出声明请求（我可以处理）？ 然后在selectServer中选择一个服务器处理
 		if err = c.bus.Publish(ctx, i.GetRPCChannel(), req); err != nil {
 			err = psrpc.NewError(psrpc.Internal, err)
 			return
@@ -137,7 +137,7 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 				return nil, err
 			}
 
-			// 将声明请求发布到通道
+			// 将声明请求发布到通道（我选择了你，你来处理？）
 			if err = c.bus.Publish(ctx, i.GetClaimResponseChannel(), &internal.ClaimResponse{
 				RequestId: requestID,
 				ServerId:  serverID,
@@ -171,6 +171,7 @@ func newRPC[ResponseType proto.Message](c *RPCClient, i *info.RequestInfo) psrpc
 	}
 }
 
+// selectServer 选择一个服务器
 func selectServer(
 	ctx context.Context,
 	claimChan chan *internal.ClaimRequest,
@@ -182,16 +183,17 @@ func selectServer(
 	defer cancel()
 
 	if opts.AffinityTimeout > 0 {
+		// 设置一个超时时间, 如果超时则取消
 		time.AfterFunc(opts.AffinityTimeout, cancel)
 	}
 
 	var (
-		shorted    bool
-		serverID   string
-		affinity   float32
-		claims     []*psrpc.Claim
-		claimCount int
-		resErr     error
+		shorted    bool           // 短路
+		serverID   string         // 服务器ID
+		affinity   float32        // 亲和力
+		claims     []*psrpc.Claim // 声明请求
+		claimCount int            // 声明请求计数
+		resErr     error          // 错误
 	)
 
 	for {
@@ -220,18 +222,21 @@ func selectServer(
 				if opts.SelectionFunc != nil {
 					claims = append(claims, &psrpc.Claim{ServerID: claim.ServerId, Affinity: claim.Affinity})
 				} else if claim.Affinity > affinity {
+					// 如果亲和力大于当前亲和力，则更新服务器ID和亲和力，（找到亲和力最高的）
+					// 备注：亲和力是服务器性能的指标，亲和力越高，服务器性能越好
 					serverID = claim.ServerId
 					affinity = claim.Affinity
 				}
 
 				if opts.ShortCircuitTimeout > 0 && !shorted {
+					// 如果设置了短路超时，则设置一个超时时间，如果超时则取消
 					shorted = true
 					time.AfterFunc(opts.ShortCircuitTimeout, cancel)
 				}
 			}
 
 		case res := <-resChan:
-			// will only happen with malformed requests
+			// will only happen with malformed requests // 只有当请求格式错误时才会发生
 			if res.Error != "" {
 				resErr = psrpc.NewErrorf(psrpc.ErrorCode(res.Code), res.Error)
 			}

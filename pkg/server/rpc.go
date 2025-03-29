@@ -119,7 +119,7 @@ func newRPCHandler[RequestType proto.Message, ResponseType proto.Message](
 	return h, nil
 }
 
-// run 运行RPC处理程序
+// run 运行RPC处理线程
 func (h *rpcHandlerImpl[RequestType, ResponseType]) run(s *RPCServer) {
 	go func() {
 		requests := h.requestSub.Channel()
@@ -130,7 +130,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) run(s *RPCServer) {
 			case <-h.complete:
 				return
 
-			case ir := <-requests:
+			case ir := <-requests: // ir: internal.Request
 				if ir == nil {
 					continue
 				}
@@ -178,25 +178,27 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) handleRequest(
 	if err != nil {
 		var res ResponseType
 		err = psrpc.NewError(psrpc.MalformedRequest, err)
-		_ = h.sendResponse(s, ctx, ir, res, err)
+		_ = h.sendResponse(s, ctx, ir, res, err) // 发送错误响应
 		return err
 	}
 
 	if h.i.RequireClaim {
+		// 如果需要声明，则进行声明请求
 		claimed, err := h.claimRequest(s, ctx, ir, req)
 		if err != nil {
 			return err
 		} else if !claimed {
 			return nil
 		}
+		// 如果声明请求成功，则调用handler处理请求
 	}
 
 	// call handler function and return response
-	response, err := h.handler(ctx, req)
-	return h.sendResponse(s, ctx, ir, response, err)
+	response, err := h.handler(ctx, req)             // 调用handler处理请求 （调用时的业务处理？）
+	return h.sendResponse(s, ctx, ir, response, err) // 发送响应
 }
 
-// claimRequest 声明请求
+// claimRequest 响应一个声明请求，用于客户端选择一个服务器处理请求
 func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 	s *RPCServer,
 	ctx context.Context,
@@ -204,14 +206,12 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 	req RequestType,
 ) (bool, error) {
 
-	var affinity float32
+	var affinity float32 = 1 // 默认亲和力为1
 	if h.affinityFunc != nil {
-		affinity = h.affinityFunc(ctx, req)
+		affinity = h.affinityFunc(ctx, req) // 根据请求计算亲和力，例如可以完成根据距离计算亲和力，或根据负载计算亲和力等等
 		if affinity < 0 {
 			return false, nil
 		}
-	} else {
-		affinity = 1
 	}
 
 	claimResponseChan := make(chan *internal.ClaimResponse, 1)
@@ -226,6 +226,7 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 		h.mu.Unlock()
 	}()
 
+	// 发布声明请求
 	err := s.bus.Publish(ctx, info.GetClaimRequestChannel(s.Name, ir.ClientId), &internal.ClaimRequest{
 		RequestId: ir.RequestId,
 		ServerId:  s.ID,
@@ -241,13 +242,13 @@ func (h *rpcHandlerImpl[RequestType, ResponseType]) claimRequest(
 	select {
 	case claim := <-claimResponseChan:
 		if claim.ServerId == s.ID {
-			return true, nil
+			return true, nil // 声明请求成功
 		} else {
-			return false, nil
+			return false, nil // 声明请求失败
 		}
 
 	case <-timeout.C:
-		return false, nil
+		return false, nil // 声明请求超时（没有收到声明请求：失败）
 	}
 }
 

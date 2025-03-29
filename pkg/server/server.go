@@ -45,7 +45,7 @@ type RPCServer struct {
 }
 
 // NewRPCServer 创建一个RPC服务器
-// todo 这个方法在livekit-server中没有直接调用，以后查看调用的位置, 可能通过psrpc?
+// 目前通过psrpc产生的服务调用
 func NewRPCServer(sd *info.ServiceDefinition, b bus.MessageBus, opts ...psrpc.ServerOption) *RPCServer {
 	s := &RPCServer{
 		ServiceDefinition: sd,
@@ -64,7 +64,7 @@ func NewRPCServer(sd *info.ServiceDefinition, b bus.MessageBus, opts ...psrpc.Se
 // RegisterHandler 注册一个处理程序
 func RegisterHandler[RequestType proto.Message, ResponseType proto.Message](
 	s *RPCServer, // 服务器
-	rpc string, // 方法名称，可能的值？？
+	rpc string, // 方法名称
 	topic []string, // 主题
 	svcImpl func(context.Context, RequestType) (ResponseType, error), // 服务实现
 	affinityFunc AffinityFunc[RequestType], // 亲和力函数

@@ -65,7 +65,7 @@ func (i *RequestInfo) GetRPCChannel() bus.Channel {
 
 // GetHandlerKey 获取方法的key
 // 格式：方法名称.主题
-// 如：livekit.RoomService.CreateRoom.topic1.topic2
+// [Method].[Topic]
 func (i *RequestInfo) GetHandlerKey() string {
 	return formatChannel('.', i.Method, i.Topic)
 }
